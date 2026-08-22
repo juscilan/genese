@@ -3,62 +3,79 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strings"
 )
 
-func main() {
-	templateFilePath := "_template.txt"
-	dataFilePath := "_list.txt"
-	distFilePath := "_dist.txt"
+// processLine substitui os placeholders (%1, %2, ...) no template
+// pelos campos de uma linha CSV separada por ";" e remove placeholders
+// não satisfeitos.
+func processLine(template, line string) string {
+	fields := strings.Split(line, ";")
 
-	template, err := os.ReadFile(templateFilePath)
-	if err != nil {
-		fmt.Printf("Error reading template file: %s\n", err)
-		return
+	result := template
+	for i, field := range fields {
+		placeholder := fmt.Sprintf("%%%d", i+1)
+		result = strings.ReplaceAll(result, placeholder, field)
 	}
-	templateStr := string(template)
 
-	dataFile, err := os.Open(dataFilePath)
-	if err != nil {
-		fmt.Printf("Error opening list file: %s\n", err)
-		return
-	}
-	defer dataFile.Close()
+	regex := regexp.MustCompile(`%[0-9]+`)
+	result = regex.ReplaceAllString(result, "")
 
-	distFile, err := os.Create(distFilePath)
-	if err != nil {
-		fmt.Printf("Error creating dist file: %s\n", err)
-		return
-	}
-	defer distFile.Close()
+	return result
+}
 
-	scanner := bufio.NewScanner(dataFile)
+// generate lê linhas do reader, processa cada uma com o template e
+// escreve o resultado no writer.
+func generate(templateStr string, reader io.Reader, writer io.Writer) error {
+	scanner := bufio.NewScanner(reader)
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		fields := strings.Split(line, ";")
+		processed := processLine(templateStr, line)
 
-		processedData := templateStr
-		for i, field := range fields {
-			placeholder := fmt.Sprintf("%%%d", i+1)
-			processedData = strings.ReplaceAll(processedData, placeholder, field)
-		}
-
-		regex := regexp.MustCompile("%[0-9]+")
-		processedData = regex.ReplaceAllString(processedData, "")
-
-		_, err := distFile.WriteString(processedData + "\n")
+		_, err := fmt.Fprintln(writer, processed)
 		if err != nil {
-			fmt.Printf("Error writing to destination file: %s\n", err)
-			return
+			return fmt.Errorf("error writing to destination file: %w", err)
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Printf("Error reading lines: %s\n", err)
+		return fmt.Errorf("error reading lines: %w", err)
 	}
 
+	return nil
+}
+
+// run orquestra a leitura do template, abertura dos arquivos de entrada
+// e saída, e a chamada a generate.
+func run(templatePath, dataPath, distPath string) error {
+	templateBytes, err := os.ReadFile(templatePath)
+	if err != nil {
+		return fmt.Errorf("error reading template file: %w", err)
+	}
+
+	dataFile, err := os.Open(dataPath)
+	if err != nil {
+		return fmt.Errorf("error opening list file: %w", err)
+	}
+	defer dataFile.Close()
+
+	distFile, err := os.Create(distPath)
+	if err != nil {
+		return fmt.Errorf("error creating dist file: %w", err)
+	}
+	defer distFile.Close()
+
+	return generate(string(templateBytes), dataFile, distFile)
+}
+
+func main() {
+	if err := run("_template.txt", "_list.txt", "_dist.txt"); err != nil {
+		fmt.Println(err)
+		return
+	}
 	fmt.Println("File has been written successfully !!! Grab a coffee ☕")
 }
