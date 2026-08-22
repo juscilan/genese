@@ -1,14 +1,1 @@
-  await db.orders.updateOne({ _id: ObjectId("%1")},
-  {
-    $set: {
-      "status": "paid",
-    }
-  });
-
-  await db.users.updateOne({_id: ObjectId('%2')},
-  { 
-    $set: {
-      "progress.payments.uscis.status": "complete",
-      "progress.payments.uscis.completed": true
-    }
-  });
+template example %1 %2 %3

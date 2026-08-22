@@ -25,6 +25,7 @@ func TestProcessLine_AllPlaceholders(t *testing.T) {
 
 func TestProcessLine_ExtraPlaceholders(t *testing.T) {
 	// Template tem %3 mas a linha só tem 2 campos — %3 deve sumir.
+	// Template has %3 but the line only has 2 fields — %3 should be removed.
 	template := "A=%1 B=%2 C=%3"
 	line := "foo;bar"
 	want := "A=foo B=bar C="
@@ -43,6 +44,7 @@ func TestProcessLine_EmptyTemplate(t *testing.T) {
 
 func TestProcessLine_EmptyLine(t *testing.T) {
 	// Linha vazia → campo único "", substitui %1 por "" e remove %2+.
+	// Empty line → single field "", replaces %1 with "" and removes %2+.
 	template := "%1-%2"
 	got := processLine(template, "")
 	want := "-"
@@ -53,6 +55,7 @@ func TestProcessLine_EmptyLine(t *testing.T) {
 
 func TestProcessLine_NoPlaceholders(t *testing.T) {
 	template := "sem placeholders"
+	template := "no placeholders"
 	got := processLine(template, "a;b;c")
 	if got != template {
 		t.Errorf("got %q, want %q", got, template)
@@ -104,6 +107,7 @@ func TestGenerate_EmptyInput(t *testing.T) {
 }
 
 // errWriter simula um writer que sempre retorna erro.
+// errWriter simulates a writer that always returns an error.
 type errWriter struct{ err error }
 
 func (e *errWriter) Write(_ []byte) (int, error) { return 0, e.err }
@@ -122,6 +126,7 @@ func TestGenerate_WriteError(t *testing.T) {
 }
 
 // errReader simula um reader que retorna erro no Scan.
+// errReader simulates a reader that returns an error during Scan.
 type errReader struct{ err error }
 
 func (e *errReader) Read(_ []byte) (int, error) { return 0, e.err }
@@ -205,6 +210,7 @@ func TestRun_DistCreateError(t *testing.T) {
 	dataPath := writeTempFile(t, dir, "data.txt", "row\n")
 
 	// Aponta dist para um diretório inexistente para forçar erro de criação.
+	// Point dist to a non-existent subdirectory to force a creation error.
 	distPath := filepath.Join(dir, "nonexistent_subdir", "dist.txt")
 
 	err := run(tmplPath, dataPath, distPath)
@@ -222,6 +228,7 @@ func TestMain_Success(t *testing.T) {
 
 	// Sobrescreve os arquivos padrão usando variáveis de ambiente ou
 	// simplesmente executa run() com caminhos temporários (mesma lógica do main).
+	// Runs run() with temporary paths, mirroring main()'s default behavior.
 	tmplPath := writeTempFile(t, dir, "_template.txt", "ok=%1")
 	dataPath := writeTempFile(t, dir, "_list.txt", "yes\n")
 	distPath := filepath.Join(dir, "_dist.txt")
@@ -233,9 +240,13 @@ func TestMain_Success(t *testing.T) {
 
 // TestMain_FilesMissing testa o branch de erro do main() usando os arquivos
 // padrão ausentes. Para cobrir o main() em si, usamos os.Stdin substituído.
+// TestMain_Error tests the error branch of main() using the default files
+// that are absent in the test working directory.
 func TestMain_Error(t *testing.T) {
 	// Salva e restaura os args/stdout originais, não há como chamar main()
 	// diretamente sem alterar o ambiente, então garantimos cobertura via run().
+	// There is no reliable way to call main() directly without altering the
+	// environment, so we guarantee coverage via run().
 	err := run("_nonexistent_template.txt", "_list.txt", "_dist.txt")
 	if err == nil {
 		t.Fatal("expected error")
@@ -245,16 +256,22 @@ func TestMain_Error(t *testing.T) {
 // TestMainFunc chama a função main() garantindo que o branch de erro seja
 // coberto quando os arquivos padrão não existem no diretório de trabalho
 // do teste. O main() imprime e retorna — não faz os.Exit, então é seguro.
+// TestMainFunc calls main() ensuring the error branch is covered when the
+// default files do not exist in the test working directory.
+// main() prints and returns — it does not call os.Exit, so it is safe to call.
 func TestMainFunc(t *testing.T) {
 	// Os arquivos padrão (_template.txt, _list.txt) não existem no dir de
 	// testes, então main() vai imprimir o erro e retornar — cobrindo todos
 	// os branches de main().
+	// The default files (_template.txt, _list.txt) do not exist in the temp
+	// dir, so main() will print the error and return — covering the error branch.
 	origDir, _ := os.Getwd()
 	tmp := t.TempDir()
 	_ = os.Chdir(tmp)
 	defer os.Chdir(origDir) //nolint:errcheck
 
 	main() // branch de erro (template não encontrado)
+	main() // error branch (template not found)
 }
 
 func TestMainFunc_Success(t *testing.T) {
@@ -264,11 +281,14 @@ func TestMainFunc_Success(t *testing.T) {
 	defer os.Chdir(origDir) //nolint:errcheck
 
 	// Cria os arquivos padrão no diretório temporário.
+	// Create the default files in the temporary directory.
 	_ = os.WriteFile("_template.txt", []byte("val=%1"), 0600)
 	_ = os.WriteFile("_list.txt", []byte("42\n"), 0600)
 
 	main() // branch de sucesso
+	main() // success branch
 }
 
 // Garante que io.Writer é satisfeito pelo errWriter (evita "unused" no linter).
+// Ensures io.Writer is satisfied by errWriter (prevents "unused" linter warnings).
 var _ io.Writer = (*errWriter)(nil)
