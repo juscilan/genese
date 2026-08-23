@@ -22,23 +22,21 @@ For each line in `_list.txt`, genese replaces `%1` with the first field, `%2` wi
 
 **`_template.txt`**
 ```
-await db.orders.updateOne({ _id: ObjectId("%1") }, { $set: { "status": "paid" } });
-await db.users.updateOne({ _id: ObjectId('%2') }, { $set: { "progress.payments.status": "complete" } });
+template example %1 %2 %3
 ```
 
 **`_list.txt`**
 ```
-61980a3bf2673f61dd88a836;602b3067c3233546de26f79a
-7a1bc4e20f931b44cc57d981;9f2e6a870c14e235bb91f304
+61980a3bf2673f61dd88a836;602b3067c3233546de26f79a;test0@gmail.com 
+61980a3bf2673f61dd88a837;602b3067c3233546de26f79b;test1@gmail.com 
+61980a3bf2673f61dd88a838;602b3067c3233546de26f79c;test2@gmail.com
 ```
 
 **`_dist.txt`** (generated)
 ```
-await db.orders.updateOne({ _id: ObjectId("61980a3bf2673f61dd88a836") }, { $set: { "status": "paid" } });
-await db.users.updateOne({ _id: ObjectId('602b3067c3233546de26f79a') }, { $set: { "progress.payments.status": "complete" } });
-
-await db.orders.updateOne({ _id: ObjectId("7a1bc4e20f931b44cc57d981") }, { $set: { "status": "paid" } });
-await db.users.updateOne({ _id: ObjectId('9f2e6a870c14e235bb91f304') }, { $set: { "progress.payments.status": "complete" } });
+template example 61980a3bf2673f61dd88a836 602b3067c3233546de26f79a test0@gmail.com 
+template example 61980a3bf2673f61dd88a837 602b3067c3233546de26f79b test1@gmail.com 
+template example 61980a3bf2673f61dd88a838 602b3067c3233546de26f79c test2@gmail.com
 ```
 
 ---
@@ -93,9 +91,11 @@ The output will be written to `_dist.txt` in the same directory.
 ```
 genese/
 ├── main.go          # Core logic: processLine, generate, run, main
-├── main_test.go     # Unit tests (100% coverage)
+├── main_test.go     # Unit tests — 18 tests, 100% statement coverage
+├── coverage.out     # Coverage profile (generated)
+├── coverage.html    # HTML coverage report (generated)
 ├── _template.txt    # Example template
-├── _list.txt        # Example data
+├── _list.txt        # Example input data
 ├── _dist.txt        # Generated output
 └── go.mod
 ```
@@ -124,7 +124,32 @@ go tool cover -html=coverage.out -o coverage.html
 open coverage.html
 ```
 
-> Current test coverage: **100%** across all statements.
+---
+
+## Test Coverage
+
+All 18 tests pass with **100% statement coverage** across every function.
+
+| Test | Function | What it covers |
+|---|---|---|
+| `TestProcessLine_AllPlaceholders` | `processLine` | All placeholders replaced correctly |
+| `TestProcessLine_ExtraPlaceholders` | `processLine` | Unused placeholders removed |
+| `TestProcessLine_EmptyTemplate` | `processLine` | Empty template returns empty string |
+| `TestProcessLine_EmptyLine` | `processLine` | Empty CSV line handled safely |
+| `TestProcessLine_NoPlaceholders` | `processLine` | Template without placeholders is unchanged |
+| `TestGenerate_SingleLine` | `generate` | Single line processed and written |
+| `TestGenerate_MultipleLines` | `generate` | Multiple lines processed in order |
+| `TestGenerate_EmptyInput` | `generate` | Empty reader produces no output |
+| `TestGenerate_WriteError` | `generate` | Write error propagated correctly |
+| `TestGenerate_ScannerError` | `generate` | Read error propagated correctly |
+| `TestRun_Success` | `run` | Full happy path with temp files |
+| `TestRun_TemplateNotFound` | `run` | Error when template file is missing |
+| `TestRun_DataNotFound` | `run` | Error when data file is missing |
+| `TestRun_DistCreateError` | `run` | Error when dist file cannot be created |
+| `TestMain_Success` | `run` / `main` | run() with default-mirroring paths |
+| `TestMain_Error` | `run` | run() error branch |
+| `TestMainFunc` | `main` | main() error branch (template not found) |
+| `TestMainFunc_Success` | `main` | main() success branch |
 
 ---
 
