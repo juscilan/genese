@@ -1,15 +1,6 @@
-  await db.orders.updateOne({ _id: ObjectId("61980a3bf2673f61dd88a836")},
-  {
-    $set: {
-      "status": "paid",
-    }
-  });
+template example 61980a3bf2673f61dd88a836 602b3067c3233546de26f79a test0@gmail.com 
 
-  await db.users.updateOne({_id: ObjectId('602b3067c3233546de26f79a')},
-  { 
-    $set: {
-      "progress.payments.uscis.status": "complete",
-      "progress.payments.uscis.completed": true
-    }
-  });
+template example 61980a3bf2673f61dd88a837 602b3067c3233546de26f79b test1@gmail.com 
+
+template example 61980a3bf2673f61dd88a838 602b3067c3233546de26f79c test2@gmail.com
 

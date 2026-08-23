@@ -9,9 +9,6 @@ import (
 	"strings"
 )
 
-// processLine substitui os placeholders (%1, %2, ...) no template
-// pelos campos de uma linha CSV separada por ";" e remove placeholders
-// não satisfeitos.
 // processLine replaces the placeholders (%1, %2, ...) in the template
 // with the fields of a ";"-separated CSV line and removes any unused
 // placeholders.
@@ -30,8 +27,6 @@ func processLine(template, line string) string {
 	return result
 }
 
-// generate lê linhas do reader, processa cada uma com o template e
-// escreve o resultado no writer.
 // generate reads lines from reader, processes each one with the template,
 // and writes the result to writer.
 func generate(templateStr string, reader io.Reader, writer io.Writer) error {
@@ -54,8 +49,6 @@ func generate(templateStr string, reader io.Reader, writer io.Writer) error {
 	return nil
 }
 
-// run orquestra a leitura do template, abertura dos arquivos de entrada
-// e saída, e a chamada a generate.
 // run orchestrates reading the template, opening the input and output files,
 // and calling generate.
 func run(templatePath, dataPath, distPath string) error {
